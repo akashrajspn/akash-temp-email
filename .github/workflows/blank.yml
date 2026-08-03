@@ -1,25 +1,27 @@
-name: Quick HTML to APK
+name: HTML to APK Builder
 
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  convert:
+  build:
     runs-on: ubuntu-latest
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Convert to APK
-      uses: tttstudios/html-to-apk-action@v1
+    - name: Convert Web Files to APK
+      uses: darkshredder/web-to-app-action@main
       with:
-        app-name: "MyQuickApp"
-        package-name: "com.quickapk.app"
-        icon-path: "" # Isko khali rehne dein default icon ke liye
+        # "." ka matlab aapki saari HTML files root (main) folder me hain
+        build-folder-path: "." 
+        app-name: "MyNewApp"
+        output-folder-path: "my-apks"
 
-    - name: Upload APK
+    - name: Upload APK File
       uses: actions/upload-artifact@v4
       with:
-        name: my-app-apk
-        path: ./*.apk
+        name: final-android-apk
+        path: my-apks/
