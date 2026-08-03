@@ -1,4 +1,4 @@
-name: HTML to APK Builder
+name: Build Android APK with Capacitor
 
 on:
   push:
@@ -12,22 +12,42 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Create Clean Build Folder
-      run: |
-        mkdir -p dist
-        # Apni saari files (jo ionic_build_folder ya dist na ho) unhe dist me copy karein
-        rsync -rr --exclude='dist' --exclude='.git' --exclude='.github' ./ dist/
-
-    - name: Convert Web Files to APK
-      uses: darkshredder/web-to-app-action@main
+    # Yahan hum explicitly Node.js 22 set kar rahe hain jo Capacitor ko chahiye
+    - name: Setup Node.js (v22)
+      uses: actions/setup-node@v4
       with:
-        # Ab conflict nahi hoga kyunki build folder alag hai
-        build-folder-path: "dist" 
-        app-name: "MyNewApp"
-        output-folder-path: "my-apks"
+        node-version: '22'
 
-    - name: Upload APK File
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Install Project Dependencies
+      run: |
+        npm install
+        # Agar capacitor install na ho toh use automatic force install karein
+        npm install @capacitor/core @capacitor/cli @capacitor/android --save-dev
+
+    - name: Grant execute permission for gradlew
+      run: |
+        if [ -f "android/gradlew" ]; then
+          chmod +x android/gradlew
+        fi
+
+    - name: Build Web Assets and Sync Capacitor
+      run: |
+        # Agar aapke paas build script hai toh npx cap sync se pehle chalti hai
+        npm run build --if-present 
+        npx cap sync android
+
+    - name: Build Android Debug APK
+      run: |
+        cd android && ./gradlew assembleDebug
+
+    - name: Upload Finished APK
       uses: actions/upload-artifact@v4
       with:
         name: final-android-apk
-        path: my-apks/
+        path: android/app/build/outputs/apk/debug/*.apk
