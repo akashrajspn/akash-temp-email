@@ -1,36 +1,52 @@
-# This is a basic workflow to help you get started with Actions
+name: Build Android APK
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ "main" ] # Jab aap main branch par push karenge tab chalega
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v5
+    - name: Checkout Repository
+      uses: actions/checkout@v5 # Node.js 24 supported latest version
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+    # (Optional) Agar Flutter project hai toh yeh step add karein:
+    # - name: Setup Flutter
+    #   uses: subosito/flutter-action@v2
+    #   with:
+    #     flutter-version: 'any'
+
+    # (Optional) Agar React Native project hai toh dependencies install karein:
+    # - name: Install Dependencies
+    #   run: npm install
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x android/gradlew
+      continue-on-error: true # Agar direct android folder na ho toh error na aaye
+
+    - name: Build APK
+      run: |
+        if [ -d "android" ]; then
+          cd android && ./gradlew assembleDebug
+        elif [ -f "gradlew" ]; then
+          ./gradlew assembleDebug
+        elif [ -f "pubspec.yaml" ]; then
+          flutter build apk --debug
+        else
+          echo "No Android project setup found!" && exit 1
+        fi
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug-apk
+        path: |
+          **/build/outputs/apk/debug/*.apk
