@@ -12,11 +12,17 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
+    - name: Create Clean Build Folder
+      run: |
+        mkdir -p dist
+        # Apni saari files (jo ionic_build_folder ya dist na ho) unhe dist me copy karein
+        rsync -rr --exclude='dist' --exclude='.git' --exclude='.github' ./ dist/
+
     - name: Convert Web Files to APK
       uses: darkshredder/web-to-app-action@main
       with:
-        # "." ka matlab aapki saari HTML files root (main) folder me hain
-        build-folder-path: "." 
+        # Ab conflict nahi hoga kyunki build folder alag hai
+        build-folder-path: "dist" 
         app-name: "MyNewApp"
         output-folder-path: "my-apks"
 
